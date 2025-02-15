@@ -1,6 +1,6 @@
 # Test your FastAPI endpoints
 
-GET http://127.0.0.1:8000/collect-data/FP.CPI.TOTL.ZG/1200/2011
+GET http://127.0.0.1:8000/avg-values
 Accept: application/json
 
 ###

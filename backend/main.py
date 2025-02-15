@@ -1,21 +1,25 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from database import populate_data
+from typing import Dict
+from queries import get_avg_values
 
 app = FastAPI()
 
+# Allow CORS for frontend development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # This allows all domains to access the API. Be careful with this in production.
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods like GET, POST, etc.
+    allow_headers=["*"],  # Allows all headers
+)
 
-# Ensure the table is created when the application starts
-# create_table()
-
-@app.get("/collect-data/{series_name}/{start_year}/{end_year}")
-async def collect_data(series_name: str, start_year: int, end_year: int):
-    try:
-        populate_data(series_name, start_year, end_year)
-        return {"message": "Data collected successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+# Endpoint to fetch the average values
+@app.get("/avg-values", response_model=Dict[str, float])
+async def avg_values():
+    data = get_avg_values()
+    return data
 
 @app.get("/hello/{name}")
 async def say_hello(name: str):
