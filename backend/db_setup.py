@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 from pydantic import BaseModel, StrictInt, StrictStr
 
-from config import DB_PATH
+from backend.config import DB_PATH
 
 
 # Validation of params for Databank API
@@ -19,13 +19,14 @@ class APIParams(BaseModel):
     def construct_url(self):
         return f'https://api.worldbank.org/v2/country/all/indicator/{self.indicator_id}?date={self.start_year}:{self.end_year}&format=json'
 
+
 def create_table():
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     cur.execute("""
             CREATE TABLE IF NOT EXISTS databank (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT,
+        date INT,
         indicator_id TEXT,
         country_id TEXT,
         unit TEXT,
@@ -40,6 +41,7 @@ def create_table():
 
     con.commit()
     con.close()
+
 
 def create_and_populate_iso2codes():
     all_data, page = [], 1
@@ -68,6 +70,7 @@ def create_and_populate_iso2codes():
     con.commit()
     con.close()
 
+
 # fetches data from the databank API and returns the queried data in a list of dictionaries
 def fetch_data_by_indicator_and_years(indicator_id, start_year, end_year):
     all_data, page = [], 1
@@ -88,10 +91,12 @@ def fetch_data_by_indicator_and_years(indicator_id, start_year, end_year):
 
     return all_data
 
+
 def fetch_country_codes(con):
     query = "SELECT id FROM country_codes"
     country_codes_df = pd.read_sql(query, con)
     return country_codes_df['id'].tolist()
+
 
 # removes duplicates and adds only the new rows to the table
 def add_new_rows_to_table(new_df, con):
@@ -117,6 +122,7 @@ def add_new_rows_to_table(new_df, con):
     con.commit()
     con.close()
 
+
 # process data fetched to fit the schema
 def process_and_populate_data(indicator_id, start_year, end_year):
     data = fetch_data_by_indicator_and_years(indicator_id, start_year, end_year)
@@ -132,4 +138,30 @@ def process_and_populate_data(indicator_id, start_year, end_year):
 
     con = sqlite3.connect(DB_PATH)
     add_new_rows_to_table(df, con)
+    con.close()
+
+
+def create_and_populate_regions_table():
+    df = pd.read_json('../data/countries_with_region.json')
+    df.rename(columns={'alpha-2': 'country_id',
+                       'name': 'country_name', 'sub-region': 'sub_region'}, inplace=True)
+    cols = ['country_id', 'country_name', 'region', 'sub_region']
+    df_to_insert = df[cols]
+    df_to_insert = df_to_insert.dropna(subset=['country_id', 'country_name', 'region', 'sub_region'])
+
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    query = ("""
+        CREATE TABLE regions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        country_id TEXT NOT NULL,
+        country_name TEXT NOT NULL,
+        region TEXT NOT NULL,
+        sub_region TEXT NOT NULL,
+        FOREIGN KEY (country_id) REFERENCES iso2_codes(id)
+    );
+    """)
+    cur.execute(query)
+    df_to_insert.to_sql('regions', con, if_exists='append', index=False)
+    con.commit()
     con.close()

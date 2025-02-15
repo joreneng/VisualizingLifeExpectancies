@@ -1,4 +1,4 @@
-// chloropleth-chart.js
+// chloropleth_chart.js
 async function renderChloropleth() {
     try {
         // Fetch the data from FastAPI
@@ -18,19 +18,24 @@ async function renderChloropleth() {
 }
 
 function createChloropleth(data, countries, countrymesh) {
-    const width = 928;
+    // Get container width
+    const container = document.getElementById('chloro-container');
+    const containerWidth = container.clientWidth;
+    
+    // Calculate responsive dimensions
+    const width = Math.min(containerWidth - 40, 800); // Max width of 800px
     const marginTop = 46;
-    const height = width / 2 + marginTop;
+    const height = (width / 2) + marginTop;
 
-    const projection = d3.geoEqualEarth().fitExtent([[2, marginTop + 2], [width - 2, height]], {type: "Sphere"});
+    const projection = d3.geoEqualEarth()
+        .fitExtent([[2, marginTop + 2], [width - 2, height]], {type: "Sphere"});
     const path = d3.geoPath(projection);
 
     // Define the color scale based on the fetched data
     const color = d3.scaleSequential(d3.extent(Object.values(data)), d3.interpolateHsl(d3.hsl("#f9035e"), d3.hsl("#5fc52e")));
 
+    // Create SVG with responsive dimensions
     const svg = d3.create("svg")
-        .attr("width", width)
-        .attr("height", height)
         .attr("viewBox", [0, 0, width, height])
         .attr("style", "max-width: 100%; height: auto;");
 
@@ -46,7 +51,7 @@ function createChloropleth(data, countries, countrymesh) {
         .attr("stroke", "currentColor")
         .attr("d", path);
 
-      // Tooltip div (hidden by default)
+    // Tooltip div (hidden by default)
     const tooltip = d3.select("body")
         .append("div")
         .attr("class", "tooltip")
@@ -104,6 +109,14 @@ function createChloropleth(data, countries, countrymesh) {
     // Append the SVG element to the chart container
     document.getElementById('chloro-container').appendChild(svg.node());
 }
+
+// // Add resize handler
+// window.addEventListener('resize', () => {
+//     // Clear existing chart
+//     document.getElementById('chloro-container').innerHTML = '';
+//     // Redraw chart
+//     renderChloropleth();
+// });
 
 window.onload = renderChloropleth;
 

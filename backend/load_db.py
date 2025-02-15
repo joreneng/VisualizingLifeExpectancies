@@ -1,4 +1,4 @@
-from db_setup import process_and_populate_data
+from backend.db_setup import process_and_populate_data
 
 LIFE_EXPECTANCY_SERIES = 'SP.DYN.LE00.IN'
 HEALTH_EXPENDITURE_SERIES = 'SH.XPD.CHEX.GD.ZS'

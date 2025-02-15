@@ -1,8 +1,10 @@
 import sqlite3
 from unittest import TestCase
+
+from backend.queries import keep_only_country_codes, query_table_by_indicator_and_years, \
+    query_and_process_wealth_health_values
 from db_setup import *
 from queries import *
-
 
 class DatabaseTests(TestCase):
     def test_fetch_data(self):
@@ -44,8 +46,17 @@ class DatabaseTests(TestCase):
         self.assertEqual(row_count, num_of_entries)
         conn.close()
 
-    def test_get_avg_values(self):
-        print(get_avg_values())
+    def test_query_and_process_avg_values(self):
+        print(query_and_process_avg_values())
+
+    def test_create_and_populate_regions_table(self):
+        create_and_populate_regions_table()
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM regions")
+        row_count = cursor.fetchone()[0]
+        assert row_count > 0
+        conn.close()
 
 class QueryTests(TestCase):
     def test_query_table(self):
@@ -60,3 +71,9 @@ class QueryTests(TestCase):
         row_count = cursor.fetchone()[0]
         self.assertEqual(row_count, 215)
         conn.close()
+
+    def test_query_and_process_wealth_health_values(self):
+        print(query_and_process_wealth_health_values(2000, 2020))
+
+    def test_query_and_process_death_causes(self):
+        print(query_and_process_death_causes(2020, 2025))

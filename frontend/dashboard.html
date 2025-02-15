@@ -6,58 +6,43 @@
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
     <script src="static/color-legend.js"></script>
-
+    <link rel="stylesheet" href="styles.css">
     <title>Multiple Charts</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        svg {
-            max-width: 100%;
-            height: auto;
-        }
-        .chart-container {
-            margin-bottom: 50px;
-        }
-    </style>
 </head>
 <body>
-    <h1>World Maps with Different Life Expectancy Data</h1>
-
-    <label for="yearFilter">Select Year:</label>
-    <select id="yearFilter">
-        <option value="2020">2020</option>
-        <option value="2019">2019</option>
-        <option value="2018">2018</option>
-    </select>
-
-    <div id="chloropleth-chart" class="chart-container">
-        <h2>Chart 1 - Life Expectancy by Country</h2>
-        <div id="chloro-container"></div>
+    <div class="charts-row">
+        <div class="chart-container">
+            <h2>How Nations Choose to Spend Their Wealth and Health</h2>
+            <div id="scatterbubble-container" class="chart"></div>
+        </div>
+        <div class="chart-container">
+            <h2>Life Expectancy by Country</h2>
+            <div id="chloro-container" class="chart"></div>
+        </div>
     </div>
 
-    <div id="line-chart" class="chart-container">
-        <h2>Chart 2 - Life Expectancy by Year</h2>
-        <div id="line-container"></div>
-    </div>
+    <!-- Bottom Section -->
+    <div class="bottom-section">
 
-    <!-- Ranked Life Expectancy of Countries/Causes of death -->
-    <div id="bar-chart" class="chart-container">
-        <h2>Chart 3 - Ranked Life Expectancy of Countries</h2>
-        <div id="bar-container"></div>
-    </div>
 
-    <div id="scatterplot-chart" class="chart-container">
-        <h2>Chart 3 - Correlation between Country Health Expenditure and Life Expectancy</h2>
-        <div id="scatter-container"></div>
+        <!-- Bottom Right -->
+<!--            <div class="bottom-right">-->
+<!--                <div class="chart-container" id="line-chart">-->
+<!--                    <h2>Life Expectancy by Year</h2>-->
+<!--                    <div id="line-container"></div>-->
+<!--                </div>-->
+<!--                <div class="chart-container" id="bar-chart">-->
+<!--                    <h2>Ranked Causes of Death of Countries</h2>-->
+<!--                    <div id="bar-container"></div>-->
+<!--                </div>-->
+<!--            </div>-->
     </div>
-
 
     <!-- Load Chart JS Files -->
+    <script src="js/scatterbubble_chart.js"></script>
     <script src="js/chloropleth_chart.js"></script>
-    <script src="js/line_chart.js"></script>
-    <script src="js/bar_chart.js"></script>
-    <script src="js/scatterplot_chart.js"></script>
+<!--    <script src="js/line_chart.js"></script>-->
+<!--    <script src="js/bar_chart.js"></script>-->
+
 </body>
 </html>
