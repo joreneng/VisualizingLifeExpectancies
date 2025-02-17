@@ -3,7 +3,7 @@ from backend.config import INDICATORS
 
 def load_db():
     # Life expectancy at birth, total (years)
-    process_and_populate_data(INDICATORS["LIFE_EXPECTATIONS"], 1960, 2025)
+    process_and_populate_data(INDICATORS["LIFE_EXPECTANCY"], 1960, 2025)
 
     # Current health expenditure (% of GDP)
     process_and_populate_data(INDICATORS["HEALTH_EXPENDITURE"], 1960, 2025)

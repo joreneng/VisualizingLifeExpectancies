@@ -15,8 +15,11 @@
 <body>
     <div class="dashboard">
         <div class="filter-container">
+            Start:
             <select id="start-year" class="year-dropdown">
             </select>
+            &emsp;
+            End:
             <select id="end-year" class="year-dropdown">
             </select>
         </div>
@@ -36,7 +39,18 @@
                 <div id="bar-container" class="chart"></div>
             </div>
             <div class="chart-container">
-                <h2>Life Expectancy by Year</h2>
+                <div class="chart-header">
+
+                    <div class="info-container">
+                        <img class="info-hover" 
+                             src="assets/info-circle.svg" 
+                             alt="info"/>
+                        <div id="info-tooltip" class="tooltip">
+                            Hover over the lines to see values!
+                        </div>
+                    </div>
+                    <h2>Life Expectancy by Year</h2>
+                </div>
                 <div id="line-container" class="chart"></div>
             </div>
         </div>

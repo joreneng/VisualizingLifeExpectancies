@@ -240,3 +240,50 @@ button:hover {
     background: white;
     box-shadow: 1px 2px 0px 0px #faee05;
 }
+
+.filter-container {
+    color: white;
+    font-size: 1.3em;
+}
+
+.chart-header {
+    display: flex;
+    gap: 10px;
+}
+
+.info-container {
+    position: relative;
+    margin-right: -55px;
+}
+
+.info-hover {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.info-container h2 {
+    positon: relative;
+    align-items: center;
+    text-align: center;
+}
+
+#info-tooltip {
+    opacity: 0;
+    font-size: 10px;
+}
+
+.info-container:hover #info-tooltip {
+    opacity: 1;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: center; /* Centers the content horizontally */
+    align-items: center;     /* Centers the content vertically */
+    text-align: center;      /* Ensures the text is centered within its container */
+}
+
+.chart-header h2 {
+    margin: 0;               /* Remove any default margin from the h2 element */
+}

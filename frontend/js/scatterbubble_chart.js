@@ -272,7 +272,7 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
             chartGroup.selectAll("circle")
                 .on("mouseover", function (event, d) {
                     d3.select(this)
-                        .attr("stroke-width", 2)
+                        .attr("stroke-width", 1.5)
                         .attr("opacity", 1);
 
                     tooltip.style("opacity", 1)
