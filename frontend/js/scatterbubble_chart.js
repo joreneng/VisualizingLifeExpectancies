@@ -200,7 +200,7 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
                 .attr("y", margin.bottom - 4)
                 .attr("fill", "currentColor")
                 .attr("text-anchor", "end")
-                .text("Health expenditure (% of GDP) →"));
+                .text("Current health expenditure (% of GDP) →"));
 
         svg.append("g")
             .attr("transform", `translate(${margin.left},0)`)

@@ -8,7 +8,7 @@ from backend.queries import (query_and_process_wealth_health_values, query_and_p
 from backend.load_db import load_db
 
 app = FastAPI()
-# load_db()
+load_db()
 
 # Allow CORS for frontend development
 app.add_middleware(
