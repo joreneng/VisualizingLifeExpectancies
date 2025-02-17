@@ -1,4 +1,6 @@
-![4 charts!](https://github.com/user-attachments/assets/127086a0-d4b5-4c73-922d-23916dfffb6b)**4 charts created:**
+![4 charts!](https://github.com/user-attachments/assets/127086a0-d4b5-4c73-922d-23916dfffb6b)
+
+**4 charts created:**
 
 Scatterplot chart with bubbles as dots
 X-axis: Current health expenditure (% of GDP)
