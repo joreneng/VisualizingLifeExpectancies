@@ -6,43 +6,47 @@
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
     <script src="static/color-legend.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <title>Multiple Charts</title>
+    <title>Health Dashboard</title>
 </head>
 <body>
-    <div class="charts-row">
-        <div class="chart-container">
-            <h2>How Nations Choose to Spend Their Wealth and Health</h2>
-            <div id="scatterbubble-container" class="chart"></div>
+    <div class="dashboard">
+        <div class="filter-container">
+            <select id="start-year" class="year-dropdown">
+            </select>
+            <select id="end-year" class="year-dropdown">
+            </select>
         </div>
-        <div class="chart-container">
-            <h2>Life Expectancy by Country</h2>
-            <div id="chloro-container" class="chart"></div>
+        <div class="charts-row">
+            <div class="chart-container">
+                <h2>How Nations Choose to Spend Their Wealth and Health</h2>
+                <div id="scatterbubble-container" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Life Expectancy by Country</h2>
+                <div id="chloro-container" class="chart"></div>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-container">
+                <h2>Causes of Death Over Time (% of Total Deaths)</h2>
+                <div id="bar-container" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Life Expectancy by Year</h2>
+                <div id="line-container" class="chart"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Bottom Section -->
-    <div class="bottom-section">
-
-
-        <!-- Bottom Right -->
-<!--            <div class="bottom-right">-->
-<!--                <div class="chart-container" id="line-chart">-->
-<!--                    <h2>Life Expectancy by Year</h2>-->
-<!--                    <div id="line-container"></div>-->
-<!--                </div>-->
-<!--                <div class="chart-container" id="bar-chart">-->
-<!--                    <h2>Ranked Causes of Death of Countries</h2>-->
-<!--                    <div id="bar-container"></div>-->
-<!--                </div>-->
-<!--            </div>-->
-    </div>
-
-    <!-- Load Chart JS Files -->
+    <script src="js/utils.js"></script>
     <script src="js/scatterbubble_chart.js"></script>
     <script src="js/chloropleth_chart.js"></script>
-<!--    <script src="js/line_chart.js"></script>-->
-<!--    <script src="js/bar_chart.js"></script>-->
-
+    <script src="js/bar_chart.js"></script>
+    <script src="js/line_chart.js"></script>
+    <script src="js/init.js"></script>
 </body>
 </html>

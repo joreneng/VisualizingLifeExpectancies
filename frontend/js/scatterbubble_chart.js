@@ -1,230 +1,331 @@
-// Parse a series of data values into a usable format
-function parseSeries(series) {
-  return series.map(([year, value]) => [new Date(Date.UTC(year, 0, 1)), value]);
-}
-
-// Linear interpolation function
-function interpolateMissingValues(data) {
-  const interpolate = (key) => {
-    for (let countryName in data) {
-      const country = countryName
-      const values = data[country];
-      
-      // Convert array of DateValue objects to sorted array of [date, value]
-      let timePoints = values
-        .filter(point => point.value !== null)  // Filter out null values
-        .map(point => [point.date, point.value])
-        .sort((a, b) => a[0] - b[0]);
-
-      // Interpolate missing values
-      let interpolatedValues = [];
-      for (let i = 0; i < timePoints.length - 1; i++) {
-        const [date1, value1] = timePoints[i];
-        const [date2, value2] = timePoints[i + 1];
-
-        // Add the current point
-        interpolatedValues.push({ date: date1, value: value1 });
-
-        // Fill in missing dates between current and next point
-        for (let date = date1 + 1; date < date2; date++) {
-          const fraction = (date - date1) / (date2 - date1);
-          const interpolatedValue = value1 + (value2 - value1) * fraction;
-          interpolatedValues.push({ date: date, value: interpolatedValue });
-        }
-      }
-
-      // Add the last point
-      if (timePoints.length > 0) {
-        const lastPoint = timePoints[timePoints.length - 1];
-        interpolatedValues.push({ date: lastPoint[0], value: lastPoint[1] });
-      }
-
-      // Update the country's data with interpolated values
-      country[key] = interpolatedValues;
-    }
-  };
-
-  // Interpolate each indicator
-  interpolate('health_exp');
-  interpolate('life_exp');
-  interpolate('population');
-  
-  return data;
-}
-
-// Helper function to get data at a specific date
-function dataAt(data, date) {
-  const years = Object.keys(data).map(Number); 
-  const allCountries = new Set(years.flatMap(year => data[year].map(d => d.name)));
-  
-  return Array.from(allCountries).map(countryName => {
-    // Find the country's data for this date
-    const countryData = data[date]?.find(d => d.name === countryName);
-    if (countryData) return countryData;
-
-    // If no data found, interpolate
-    return {
-      name: countryName,
-      region: findRegion(data, countryName),
-      health_exp: valueAt(data, countryName, 'health_exp', date),
-      life_exp: valueAt(data, countryName, 'life_exp', date),
-      population: valueAt(data, countryName, 'population', date)
-    };
-  });
-}
-
-// Helper function to find a country's region
-function findRegion(data, countryName) {
-  for (const year of Object.keys(data)) {
-    const countryData = data[year].find(d => d.name === countryName);
-    if (countryData) return countryData.region;
-  }
-  return null;
-}
-
-// Function to get value at a specific date using interpolation
-function valueAt(data, countryName, indicator, targetDate) {
-  // Get all available dates
-  const dates = Object.keys(data).map(Number);  // No need to sort
-  
-  // Find the data points before and after the target date
-  const beforeDate = dates.filter(d => d <= targetDate).pop();
-  const afterDate = dates.filter(d => d >= targetDate)[0];
-
-  if (!beforeDate || !afterDate) return null;
-
-  const beforeValue = data[beforeDate].find(d => d.name === countryName)?.[indicator];
-  const afterValue = data[afterDate].find(d => d.name === countryName)?.[indicator];
-
-  if (beforeValue == null || afterValue == null) return null;
-
-  // If exact date match, return the value
-  if (beforeDate === targetDate) return beforeValue;
-  if (afterDate === targetDate) return afterValue;
-
-  // Interpolate between the two values
-  const fraction = (targetDate - beforeDate) / (afterDate - beforeDate);
-  return beforeValue + (afterValue - beforeValue) * fraction;
-}
-
 // Function to render the scatter bubble chart
-async function renderScatterBubble() {
-  try {
-    const start_year = 2000;
-    const end_year = 2020;
-    const response = await fetch(`http://127.0.0.1:8000/bubble-data/${start_year}/${end_year}`);
-    let data = await response.json();
+async function renderScatterBubble(start_year = 1960, end_year = 2023) {
+    try {
+        const container = document.getElementById('scatterbubble-container');
+        if (!container) {
+            console.error('Scatter bubble container not found');
+            return;
+        }
 
-    // Get the container dimensions
-    const container = document.getElementById('scatterbubble-container');
-    const containerWidth = container.clientWidth;
-    
-    // Set up chart properties with responsive dimensions
-    const width = Math.min(containerWidth, 800);
-    const height = width * 0.6;
-    const margin = {
-      top: 20,
-      right: 20,
-      bottom: 40,
-      left: 50
-    };
+        // Remove existing SVG and tooltips
+        d3.select('#scatterbubble-container svg').remove();
+        d3.selectAll('#scatter-tooltip').remove();
 
-    // Get interpolated data for current year
-    const currentYear = end_year;
-    const currentData = dataAt(data, currentYear).filter(d => 
-      d.health_exp != null && 
-      d.life_exp != null && 
-      d.population != null
-    );
+        const response = await fetch(`http://127.0.0.1:8000/bubble-data/${start_year}/${end_year}`);
+        const rawData = await response.json();
 
-    // Set up chart properties
-    const x = d3.scaleLinear().domain([0, 20]).range([margin.left, width - margin.right]);
-    const y = d3.scaleLinear().domain([14, 90]).range([height - margin.bottom, margin.top]);
-    const radius = d3.scaleSqrt().domain([0, 5e8]).range([0, width / 24]);
-    const color = d3.scaleOrdinal(d3.schemeAccent);
+        // Helper function to interpolate missing values
+        function interpolateValue(data, countryName, date, indicator) {
+            const years = Object.keys(data).map(Number).sort((a, b) => a - b);
+            const targetDate = Number(date);
 
-    const svg = d3.create("svg").attr("viewBox", [0, 0, width, height]);
+            // Find the closest years before and after the target date
+            const beforeYear = years.filter(year => year <= targetDate).pop();
+            const afterYear = years.filter(year => year > targetDate)[0];
 
-    // Create axes and grid
-    const xAxis = g => g
-      .attr("transform", `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(x).ticks(width / 80, ","))
-      .call(g => g.select(".domain").remove())
-      .call(g => g.append("text")
-        .attr("x", width)
-        .attr("y", margin.bottom - 4)
-        .attr("fill", "currentColor")
-        .attr("text-anchor", "end")
-        .text("Current health expenditure (% of GDP) →"));
+            if (!beforeYear || !afterYear) return null;
 
-    const yAxis = g => g
-      .attr("transform", `translate(${margin.left},0)`)
-      .call(d3.axisLeft(y))
-      .call(g => g.select(".domain").remove())
-      .call(g => g.append("text")
-        .attr("x", -margin.left)
-        .attr("y", 10)
-        .attr("fill", "currentColor")
-        .attr("text-anchor", "start")
-        .text("↑ Life expectancy at birth, total (years)"));
+            const beforeData = data[beforeYear]?.find(d => d.name === countryName);
+            const afterData = data[afterYear]?.find(d => d.name === countryName);
 
-    const grid = g => g
-      .attr("stroke", "currentColor")
-      .attr("stroke-opacity", 0.1)
-      .call(g => g.append("g")
-        .selectAll("line")
-        .data(x.ticks())
-        .join("line")
-          .attr("x1", d => 0.5 + x(d))
-          .attr("x2", d => 0.5 + x(d))
-          .attr("y1", margin.top)
-          .attr("y2", height - margin.bottom))
-      .call(g => g.append("g")
-        .selectAll("line")
-        .data(y.ticks())
-        .join("line")
-          .attr("y1", d => 0.5 + y(d))
-          .attr("y2", d => 0.5 + y(d))
-          .attr("x1", margin.left)
-          .attr("x2", width - margin.right));
+            if (!beforeData || !afterData) return null;
 
-    svg.append("g").call(xAxis);
-    svg.append("g").call(yAxis);
-    svg.append("g").call(grid);
+            const beforeValue = beforeData[indicator];
+            const afterValue = afterData[indicator];
 
-    // Create circles for the scatterplot
-    const circle = svg.append("g")
-      .attr("stroke", "black")
-    .selectAll("circle")
-    .data(currentData)
-    .join("circle")
-      .sort((a, b) => d3.descending(a.population, b.population))
-      .attr("cx", d => x(d.health_exp))
-      .attr("cy", d => y(d.life_exp))
-      .attr("r", d => radius(d.population))
-      .attr("fill", d => color(d.region))
-      .call(circle => circle.append("title")
-        .text(d => `${d.name}\n${d.region}`));
+            if (beforeValue == null || afterValue == null) return null;
 
-    document.getElementById('scatterbubble-container').appendChild(svg.node());
-    // animateChart();
+            // If exact date match, return the value
+            if (beforeYear === targetDate) return beforeValue;
+            if (afterYear === targetDate) return afterValue;
 
-  } catch (error) {
-    console.error('Error fetching data or rendering chart:', error);
-  }
+            // Interpolate between the two values
+            const fraction = (targetDate - beforeYear) / (afterYear - beforeYear);
+            return beforeValue + (afterValue - beforeValue) * fraction;
+        }
+
+        // Helper function to get interpolated data for a specific year
+        function getYearData(data, year) {
+            const years = Object.keys(data).map(Number);
+            const allCountries = new Set(years.flatMap(year => data[year].map(d => d.name)));
+
+            return Array.from(allCountries).map(countryName => {
+                // Find the country's data for this year
+                const exactData = data[year]?.find(d => d.name === countryName);
+                if (exactData && exactData.health_exp > 0) return exactData;  // Check for positive health_exp
+
+                // If no exact data, interpolate each value
+                const health_exp = interpolateValue(data, countryName, year, 'health_exp');
+                const life_exp = interpolateValue(data, countryName, year, 'life_exp');
+                const population = interpolateValue(data, countryName, year, 'population');
+
+                // Only return if we have all valid values
+                if (health_exp > 0 && life_exp && population) {  // Ensure health_exp is positive
+                    return {
+                        name: countryName,
+                        region: data[Object.keys(data)[0]].find(d => d.name === countryName)?.region,
+                        health_exp,
+                        life_exp,
+                        population
+                    };
+                }
+                return null;
+            }).filter(d => d != null);
+        }
+
+        // Get the container dimensions
+        const containerWidth = container.clientWidth;
+
+        // Set up chart properties with responsive dimensions
+        const width = Math.min(containerWidth, 800);
+        const height = width * 0.6;
+        const margin = {
+            top: 40, right: 20, bottom: 40, left: 50
+        };
+
+        // Create SVG
+        const svg = d3.create("svg")
+            .attr("viewBox", [0, 0, width, height])
+            .attr("width", width)
+            .attr("height", height)
+            .attr("style", "max-width: 100%; height: auto;");
+
+
+        // Get all years and interpolated data
+        const years = Object.keys(rawData).map(Number).sort(d3.ascending);
+        const interpolatedData = {};
+        years.forEach(year => {
+            interpolatedData[year] = getYearData(rawData, year);
+        });
+
+        // Create scales
+        const x = d3.scaleLog()
+            .domain([Math.max(0.1, d3.min(years.flatMap(year => interpolatedData[year]), d => d.health_exp) * 0.8),
+                d3.max(years.flatMap(year => interpolatedData[year]), d => d.health_exp) * 1.2])
+            .range([margin.left, width - margin.right]);
+
+        // // After creating the SVG, add a clipping path
+        const clip = svg.append("defs")
+            .append("clipPath")
+            .attr("id", "chart-area")
+            .append("rect")
+            .attr("x", margin.left)
+            .attr("y", margin.top)
+            .attr("width", width - margin.left - margin.right)
+            .attr("height", height - margin.top - margin.bottom);
+
+        // Create a group for the chart content with clipping
+        const chartGroup = svg.append("g")
+            .attr("clip-path", "url(#chart-area)");
+
+        // Update the y scale domain to better contain all values
+        const y = d3.scaleLinear()
+            .domain([d3.min(years.flatMap(year => interpolatedData[year]), d => d.life_exp) * 0.95,
+                d3.max(years.flatMap(year => interpolatedData[year]), d => d.life_exp) * 1.02])
+            .range([height - margin.bottom, margin.top]);
+
+        const radius = d3.scaleSqrt()
+            .domain([0, d3.max(years.flatMap(year => interpolatedData[year]), d => d.population)])
+            .range([4, width / 48]);
+
+        // create a list of keys
+        const keys = ["Africa", "Americas", "Europe", "Asia", "Oceania"];
+
+        const color = d3.scaleOrdinal(d3.schemeAccent)
+            .domain(Array.from(new Set(years.flatMap(year => interpolatedData[year].map(d => d.region)))));
+
+        // Add one dot in the legend for each name.
+        svg.selectAll("mydots")
+          .data(keys)
+          .enter()
+          .append("circle")
+            .attr("cy", 10)
+            .attr("cx", function(d,i){ return margin.left + i*70; })
+            .attr("r", 3)
+            .attr("stroke", "black")
+            .style("fill", function(d){ return color(d)});
+
+        // Add one dot in the legend for each name.
+        svg.selectAll("mylabels")
+          .data(keys)
+          .enter()
+          .append("text")
+            .attr("y", 10)
+            .attr("x", function(d,i){ return margin.left + 7 + i*70; })
+            .style("fill", "black")
+            .text(function(d){ return d; })
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle");
+
+        // Create a group specifically for grid lines (background layer)
+        const gridGroup = svg.append("g")
+            .attr("class", "grid-group");
+
+        // Add grid lines first (behind everything)
+        gridGroup.append("g")
+            .attr("class", "grid")
+            .attr("stroke", "#ddd")
+            .attr("stroke-opacity", 0.1)
+            .call(g => g
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x)
+                    .ticks(width / 80)
+                    .tickSize(-height + margin.top + margin.bottom)
+                    .tickFormat("")));
+
+        gridGroup.append("g")
+            .attr("class", "grid")
+            .attr("stroke", "#ddd")
+            .attr("stroke-opacity", 0.1)
+            .call(g => g
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y)
+                    .ticks(height / 50)
+                    .tickSize(-width + margin.left + margin.right)
+                    .tickFormat("")));
+
+        // Remove grid lines' base lines
+        gridGroup.selectAll(".grid .domain").remove();
+
+        // Add axes
+        svg.append("g")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(width / 80, ","))
+            .call(g => g.select(".domain").remove())
+            .call(g => g.selectAll(".tick text")
+                .attr("font-family", "Patrick Hand"))
+            .call(g => g.append("text")
+                .attr("class", "axis-label")
+                .attr("x", width - margin.right)
+                .attr("y", margin.bottom - 4)
+                .attr("fill", "currentColor")
+                .attr("text-anchor", "end")
+                .text("Health expenditure (% of GDP) →"));
+
+        svg.append("g")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y))
+            .call(g => g.select(".domain").remove())
+            .call(g => g.selectAll(".tick text")
+                .attr("font-family", "Patrick Hand"))
+            .call(g => g.append("text")
+                .attr("x", -margin.left)
+                .attr("y", margin.top - 4)
+                .attr("class", "axis-label")
+                .attr("fill", "currentColor")
+                .attr("text-anchor", "start")
+                .text("↑ Life expectancy at birth (years)"));
+
+        // Add year label
+        const yearLabel = svg.append("text")
+            .attr("class", "year-label")
+            .attr("x", width - margin.right)
+            .attr("y", margin.top + 20)
+            .attr("text-anchor", "end")
+            .attr("font-size", "24px")
+            .attr("font-weight", "bold")
+            .attr("font-family", "Patrick Hand");
+
+        // Add tooltip
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .attr("id", "scatter-tooltip")
+            .style("opacity", 0)
+            .style("position", "absolute")
+            .style("background-color", "#E6E6FA")
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px");
+
+        function updateChart(year) {
+            const yearData = interpolatedData[year];
+            
+            // Check if we have valid data for this year
+            // if (!yearData || yearData.length === 0) {
+            //     // Clear existing circles
+            //     chartGroup.selectAll("circle").remove();
+            //     // Update year label to show no data
+            //     yearLabel.text(`${year} (No data)`);
+            //     return;
+            // }
+
+            // Update circles
+            const circles = chartGroup.selectAll("circle")
+                .data(yearData, d => d.name);
+
+            circles.enter()
+                .append("circle")
+                .attr("fill", d => color(d.region))
+                .attr("opacity", 0.85)
+                .attr("stroke", "black")
+                .attr("stroke-width", 0.5)
+                .merge(circles)
+                .transition()
+                .duration(250)
+                .attr("cx", d => x(d.health_exp))
+                .attr("cy", d => y(d.life_exp))
+                .attr("r", d => radius(d.population));
+
+            circles.exit().remove();
+
+            chartGroup.selectAll("circle")
+                .on("mouseover", function (event, d) {
+                    d3.select(this)
+                        .attr("stroke-width", 2)
+                        .attr("opacity", 1);
+
+                    tooltip.style("opacity", 1)
+                        .html(`${d.name}<br>
+                          Region: ${d.region}<br>
+                          Health Exp: ${d.health_exp.toFixed(2)}%<br>
+                          Life Exp: ${d.life_exp.toFixed(1)} years<br>
+                          Population: ${d3.format(".2s")(d.population)}`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 10) + "px");
+                })
+                .on("mouseout", function () {
+                    d3.select(this)
+                        .attr("stroke-width", 0.5)
+                        .attr("opacity", 0.7);
+                    tooltip.style("opacity", 0);
+                });
+
+            yearLabel.text(year);
+        }
+
+        // Animation loop
+        let currentYearIndex = 0;
+
+        function animate() {
+            if (currentYearIndex >= years.length) {
+                currentYearIndex = 0;
+            }
+            
+            // Skip years with no data
+            while (currentYearIndex < years.length && 
+                   (!interpolatedData[years[currentYearIndex]] || 
+                    interpolatedData[years[currentYearIndex]].length === 0)) {
+                currentYearIndex++;
+                if (currentYearIndex >= years.length) {
+                    currentYearIndex = 0;
+                }
+            }
+            
+            updateChart(years[currentYearIndex]);
+            currentYearIndex++;
+            setTimeout(animate, 1000);
+        }
+
+        // Start animation
+        animate();
+
+        // Replace container.innerHTML = '' with:
+        container.appendChild(svg.node());
+
+    } catch (error) {
+        d3.selectAll('.tooltip').remove();
+        console.error('Error rendering scatter bubble:', error);
+    }
 }
 
-// Animate the chart over time with transitions
-function animateChart() {
-  let currentYear = 2000; // Start year for animation
-
-  function updateData() {
-    currentYear++;
-    const currentData = dataAt(data, currentYear);
-    update(currentData);
-  }
-
-  setInterval(updateData, 1000); // Update every second (adjust as needed)
-}
-
-window.onload = renderScatterBubble();

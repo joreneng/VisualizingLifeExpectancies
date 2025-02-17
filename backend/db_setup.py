@@ -19,28 +19,34 @@ class APIParams(BaseModel):
     def construct_url(self):
         return f'https://api.worldbank.org/v2/country/all/indicator/{self.indicator_id}?date={self.start_year}:{self.end_year}&format=json'
 
+def connect_db():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    return conn, cur
+
+def commit_and_close_db(conn):
+    conn.commit()
+    conn.close()
 
 def create_table():
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
+    conn, cur = connect_db()
     cur.execute("""
-            CREATE TABLE IF NOT EXISTS databank (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date INT,
-        indicator_id TEXT,
-        country_id TEXT,
-        unit TEXT,
-        value REAL
-    );
-        """)
+        CREATE TABLE IF NOT EXISTS databank (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date INT,
+            indicator_id TEXT,
+            country_id TEXT,
+            unit TEXT,
+            value REAL
+        );
+    """)
 
     cur.execute("""
-            CREATE UNIQUE INDEX idx_databank_unique 
+        CREATE UNIQUE INDEX idx_databank_unique 
         ON databank (indicator_id, country_id, date);
-        """)
+    """)
 
-    con.commit()
-    con.close()
+    commit_and_close_db(conn)
 
 
 def create_and_populate_iso2codes():
@@ -58,17 +64,15 @@ def create_and_populate_iso2codes():
     df = pd.DataFrame(all_data, columns=filter_cols)
     df.rename(columns={'iso2Code': 'id', 'name': 'country'}, inplace=True)
 
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
+    conn, cur = connect_db()
     cur.execute("""
-                CREATE TABLE IF NOT EXISTS iso2_codes (
+        CREATE TABLE IF NOT EXISTS iso2_codes (
             id TEXT PRIMARY KEY,
             country TEXT
         );
              """)
-    df.to_sql('iso2_codes', con, if_exists='append', index=False)
-    con.commit()
-    con.close()
+    df.to_sql('iso2_codes', conn, if_exists='append', index=False)
+    commit_and_close_db(conn)
 
 
 # fetches data from the databank API and returns the queried data in a list of dictionaries
@@ -92,21 +96,22 @@ def fetch_data_by_indicator_and_years(indicator_id, start_year, end_year):
     return all_data
 
 
-def fetch_country_codes(con):
+def fetch_country_codes(conn):
     query = "SELECT id FROM country_codes"
-    country_codes_df = pd.read_sql(query, con)
+    country_codes_df = pd.read_sql(query, conn)
     return country_codes_df['id'].tolist()
 
 
 # removes duplicates and adds only the new rows to the table
-def add_new_rows_to_table(new_df, con):
+def add_new_rows_to_table(new_df):
     # filter new_df so that it only contains rows with valid country codes and non-null values
     # country_codes = fetch_country_codes(con)
     new_df = new_df.dropna(subset=['country_id', 'value'])
     # valid_codes = new_df['country_id'].isin(country_codes)
     # new_df = new_df[valid_codes]
 
-    existing_df = pd.read_sql("SELECT * FROM databank", con)
+    conn, cur = connect_db()
+    existing_df = pd.read_sql("SELECT * FROM databank", conn)
 
     # left join to find rows in new_df that are not in existing_df and include only the new rows in the new df
     merged_df = pd.merge(new_df, existing_df, on=['indicator_id', 'country_id', 'date'], how='left', indicator=True)
@@ -118,9 +123,8 @@ def add_new_rows_to_table(new_df, con):
 
     # drop the old value_x, unit_x, value_y, unit_y columns
     df_to_insert = df_to_insert.drop(columns=['value_x', 'unit_x', 'value_y', 'unit_y'])
-    df_to_insert.to_sql('databank', con, if_exists='append', index=False)
-    con.commit()
-    con.close()
+    df_to_insert.to_sql('databank', conn, if_exists='append', index=False)
+    commit_and_close_db(conn)
 
 
 # process data fetched to fit the schema
@@ -136,9 +140,7 @@ def process_and_populate_data(indicator_id, start_year, end_year):
     if not all(col in df.columns for col in filter):
         raise Exception(f"Data is missing required columns. Expected columns: {filter}")
 
-    con = sqlite3.connect(DB_PATH)
-    add_new_rows_to_table(df, con)
-    con.close()
+    add_new_rows_to_table(df)
 
 
 def create_and_populate_regions_table():
@@ -149,8 +151,7 @@ def create_and_populate_regions_table():
     df_to_insert = df[cols]
     df_to_insert = df_to_insert.dropna(subset=['country_id', 'country_name', 'region', 'sub_region'])
 
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
+    conn, cur = connect_db()
     query = ("""
         CREATE TABLE regions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -162,6 +163,5 @@ def create_and_populate_regions_table():
     );
     """)
     cur.execute(query)
-    df_to_insert.to_sql('regions', con, if_exists='append', index=False)
-    con.commit()
-    con.close()
+    df_to_insert.to_sql('regions', conn, if_exists='append', index=False)
+    commit_and_close_db(conn)

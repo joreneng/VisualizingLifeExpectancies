@@ -1,10 +1,16 @@
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f9;
+    font-family: 'Patrick Hand', sans-serif;
+    background-color: #3a3a5e;
     margin: 0;
     padding: 20px;
     min-height: 100vh;
     display: block;
+}
+
+.patrick-hand-regular {
+  font-family: "Patrick Hand", serif;
+  font-weight: 100;
+  font-style: normal;
 }
 
 /* Grid Layout */
@@ -40,29 +46,20 @@ body {
 
 /* Chart Styles */
 .chart-container {
-    /* background-color: #fff;
+    background-color: #f5f5ff;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    height: 100%;
-    width: 100%;
-    box-sizing: border-box; */
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    box-shadow: 8px 10px 0px 0px #faee05;
     padding: 20px;
-    max-width: 100%;
-}
-
-.chart {
-    flex: 1;
-    min-width: 400px; /* Minimum width before wrapping */
-    height: auto;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 50px auto;
+    box-sizing: border-box;
+    border: 2px solid black;
 }
 
 svg {
     max-width: 100%;
-    height: 100%;
+    height: auto;
     display: block;
     margin: 0 auto;
 }
@@ -110,36 +107,6 @@ button:hover {
     margin-top: 20px;
 }
 
-/* Chart Styles */
-svg {
-    max-width: 100%;
-    height: auto;
-}
-
-.chart-container {
-    margin-bottom: 50px;
-    width: 100%;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-#scatterbubble-container {
-    width: 100%;
-    height: auto;
-    position: relative;
-}
-
-#scatterbubble-container svg {
-    display: block;
-    max-width: 100%;
-    height: auto;
-}
-
 /* Additional chart styling */
 .chart-title {
     font-size: 1.5em;
@@ -148,8 +115,9 @@ svg {
 }
 
 .axis-label {
-    font-size: 0.9em;
-    fill: #666;
+    font-size: 1.3em;
+    fill: black;
+    font-family: "Patrick Hand", sans-serif;
 }
 
 .grid line {
@@ -167,6 +135,7 @@ svg {
 }
 
 .charts-row {
+    align-items: center;
     display: flex;
     flex-direction: row;
     gap: 20px;
@@ -176,17 +145,98 @@ svg {
     margin: 0 auto;
 }
 
-.chart-container {
-    flex: 1;
+.chart {
+    width: 100%;
+    height: auto;
+    background: transparent;
+    border-radius: 8px;
+    padding: 5px;
     min-width: 400px;
+}
+
+.dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    max-width: 2000px;
+    margin: 0 auto;
 }
 
 .chart-container h2 {
     text-align: center;
     margin-bottom: 20px;
+    color: #333;
+    font-size: 1.2em;
 }
 
-.chart {
-    width: 100%;
-    height: auto;
+.year-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.control-btn {
+    background: #4CAF50;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+#yearSlider {
+    flex: 1;
+    height: 2px;
+    -webkit-appearance: none;
+    background: #ddd;
+}
+
+#yearSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#yearDisplay {
+    font-size: 1.2rem;
+    font-weight: bold;
+    min-width: 4rem;
+}
+
+.tooltip {
+    font-family: "Patrick Hand", sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.tick-labels {
+    font-family: "Patrick Hand", sans-serif;
+}
+
+.label {
+    font-size: 23px;
+}
+
+.year-dropdown {
+    font-family: "Patrick Hand", sans-serif;
+    font-size: 20px;
+    border-radius: 8px;
+    border: 2px solid black;
+    background: white;
+    box-shadow: 1px 2px 0px 0px #faee05;
 }

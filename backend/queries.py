@@ -1,10 +1,12 @@
 import sqlite3
-from typing import Optional, List
+from typing import Optional, List, Dict
+import json
 
 import pandas as pd
 from pydantic import BaseModel, StrictStr, StrictInt
 
-from backend.config import DB_PATH
+from backend.db_setup import connect_db, commit_and_close_db
+from backend.config import INDICATORS
 
 
 class BubbleObject(BaseModel):
@@ -14,174 +16,170 @@ class BubbleObject(BaseModel):
     population: Optional[float] = None
     life_exp: Optional[float] = None
 
-
-# queries table and returns the data in a dataframe
-def query_table_by_indicator_and_years(indicator_id, start_year, end_year):
-    conn = sqlite3.connect(DB_PATH)
-    query = f"""
-    SELECT * FROM databank
-    WHERE indicator_id = "{indicator_id}" AND date BETWEEN {start_year} AND {end_year}
-    """
-    df = pd.read_sql(query, conn)
-    return df
-
+# Helper to remove non-country codes from iso2_codes before I discovered a regions database online
 def keep_only_country_codes():
     country_ids_to_delete = ['EU', 'OE', 'XC', 'XD', 'XE', 'XF', 'XG', 'XH', 'XI',
                              'XJ', 'XL', 'XM', 'XN', 'XO', 'XP', 'XQ', 'XT', 'XU', 'PS'
                              'XY', 'ZB', 'ZF', 'ZG', 'ZH', 'ZI', 'ZJ', 'ZQ', 'ZT']
     country_ids_str = ', '.join(f"'{country_id}'" for country_id in country_ids_to_delete)
 
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
+    conn, cur = connect_db()
     delete_query = f"""
     DELETE FROM country_codes
     WHERE id IN ({country_ids_str})
     OR id GLOB '*[0-9]*';
     """
     cur.execute(delete_query)
-    con.commit()
-    con.close()
+    commit_and_close_db(conn)
 
-def find_avg_life_expectancy_over_all_years():
+class LineChartData(BaseModel):
+    name: str
+    date: int
+    value: float
+
+def find_life_expectancy_of_countries_by_years(start_year = 1960, end_year = 2023) -> List[Dict]:
+    conn, cur = connect_db()
+#     query = """
+#     WITH RECURSIVE years(year) AS (
+#     SELECT ?
+#     UNION ALL
+#     SELECT year + 1
+#     FROM years
+#     WHERE year < ?
+# ),
+# life_expectancy_data AS (
+#     SELECT c.country, d.country_id, d.date, d.value
+#     FROM databank d
+#     JOIN country_codes c ON d.country_id = c.id
+#     WHERE d.indicator_id = 'SP.DYN.LE00.IN' AND
+#           d.date BETWEEN (SELECT MIN(year) FROM years)
+#               AND (SELECT MAX(year) FROM years)
+# ),
+#     all_years AS (
+#         SELECT c.country_id, c.country, y.year
+#         FROM years y
+#                  CROSS JOIN (SELECT DISTINCT country_id, country FROM life_expectancy_data) c
+# )
+# SELECT ay.country, ay.year, le.value
+#   FROM all_years ay
+# LEFT JOIN life_expectancy_data le
+#     ON ay.country_id = le.country_id AND ay.year = le.date
+# ORDER BY ay.country_id, ay.year;
+# """
+
     query = """
-        SELECT country_id, AVG(value) AS avg_value
+            SELECT c.country, d.date, d.value
     FROM databank d
-    WHERE indicator_id = 'SP.DYN.LE00.IN'
-    GROUP BY indicator_id, country_id;
-    """
-
-def find_life_expectancy_of_country(country_id):
-    query = f"""
-            SELECT country_id, value AS avg_value
-        FROM databank d
-        WHERE indicator_id = 'SP.DYN.LE00.IN' 
-        AND country_id = {country_id};
+    JOIN country_codes c ON d.country_id = c.id
+    WHERE d.indicator_id = 'SP.DYN.LE00.IN' AND
+          d.date BETWEEN ? AND ?
+    GROUP BY d.country_id, d.date;
         """
+    cur.execute(query, (start_year, end_year))
+    results = cur.fetchall()
+    conn.close()
 
-# Define the structure of the data being returned
-class AvgLifeExpectancy(BaseModel):
-    country_id: StrictStr
-    avg_value: float
-    start_year: StrictInt
-    end_year: StrictInt
+    # date = [{name: 'United Arab Emirates', date: 1960, value: 48.8}]
+    data = [
+        {
+            "name": row[0],
+            "date": row[1],
+            "value": row[2],
+        }
+        for row in results
+    ]
+
+    return data
 
 # Helper function to query the database and get the average values
-def query_and_process_avg_values(start_year = None, end_year = None):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+def query_and_process_avg_values(start_year = 1960, end_year = 2023) -> Dict[str, float]:
+    conn, cur = connect_db()
     query = """
-                SELECT country_id, AVG(value) AS avg_value
-                FROM databank
-                WHERE indicator_id = 'SP.DYN.LE00.IN'
-                GROUP BY country_id;
-                """
-    if start_year and end_year and start_year <= end_year:
-        query = """
-            SELECT country_id, AVG(value) AS avg_value
-            FROM databank
-            WHERE indicator_id = 'SP.DYN.LE00.IN'
-            AND date BETWEEN ? AND ?
-            GROUP BY country_id;
-            """
-        cursor.execute(query, (start_year, end_year))
-    else:
-        cursor.execute(query)
-
-    results = cursor.fetchall()
-
-    # Format the result to return country_id -> avg_value
-    data = {}
-    for row in results:
-        country_id = row[0]
-        avg_value = row[1]
-        data[country_id] = avg_value
-
-    conn.close()
-    return data
-
-def query_and_process_wealth_health_values(start_year, end_year):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    query = """
-            SELECT r.country_name, r.region, d.date,
-                   MAX(CASE WHEN d.indicator_id = 'SP.POP.TOTL' THEN d.value END) AS population,
-                   MAX(CASE WHEN d.indicator_id = 'SH.XPD.CHEX.GD.ZS' THEN d.value END) AS health_exp,
-                   MAX(CASE WHEN d.indicator_id = 'SP.DYN.LE00.IN' THEN d.value END) AS life_exp
-            FROM databank d
-            JOIN regions r ON d.country_id = r.country_id
-            WHERE d.indicator_id IN ('SP.POP.TOTL', 'SH.XPD.CHEX.GD.ZS', 'SP.DYN.LE00.IN')
-                AND d.date BETWEEN ? AND ?
-            GROUP BY r.country_name, r.region, d.date
-            ORDER BY d.date, r.country_name;    
+        SELECT country_id, AVG(value) AS avg_value
+        FROM databank
+        WHERE indicator_id = ?
+        AND date BETWEEN ? AND ?
+        GROUP BY country_id;
     """
-
-    cursor.execute(query, (start_year, end_year))
-    rows = cursor.fetchall()
-
-    # Initialize the data dictionary with empty lists for each year
-    data = {year: [] for year in range(start_year, end_year + 1)}
+    cur.execute(query, (INDICATORS["LIFE_EXPECTANCY"], start_year, end_year))
+    results = cur.fetchall()
     
-    # Transform into year-based dictionary
-    for row in rows:
-        name, region, date, population, health_exp, life_exp = row
-        
-        # Append the country data to the appropriate year's list
-        data[date].append({
-            "name": name,
-            "region": region,
-            "health_exp": health_exp,
-            "life_exp": life_exp,
-            "population": population
-        })
-
+    data = {row[0]: row[1] for row in results}
     conn.close()
     return data
 
-def query_and_process_death_causes(start_year, end_year):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
+def query_and_process_wealth_health_values(start_year = 1960, end_year = 2023) -> Dict[int, List[BubbleObject]]:
+    conn, cur = connect_db()
     query = """
-    WITH ranked_causes AS (
-        SELECT 
-            d.date,
-            r.country_name as name,
-            r.region as category,  -- Using region as category for color grouping
-            d.indicator_id,
-            d.value,
-            RANK() OVER (
-                PARTITION BY d.date 
-                ORDER BY d.value DESC
-            ) as rank
+        SELECT r.country_name, r.region, d.date,
+               MAX(CASE WHEN d.indicator_id = "SP.POP.TOTL" THEN d.value END) AS population,
+               MAX(CASE WHEN d.indicator_id = "SH.XPD.CHEX.GD.ZS" THEN d.value END) AS health_exp,
+               MAX(CASE WHEN d.indicator_id = "SP.DYN.LE00.IN" THEN d.value END) AS life_exp
         FROM databank d
         JOIN regions r ON d.country_id = r.country_id
-        WHERE d.date BETWEEN ? AND ?
+        WHERE d.indicator_id IN ("SP.POP.TOTL", "SH.XPD.CHEX.GD.ZS", "SP.DYN.LE00.IN")
+            AND d.date BETWEEN ? AND ?
+        GROUP BY r.country_name, r.region, d.date
+        ORDER BY d.date, r.country_name;    
+    """
+    
+    cur.execute(query, (start_year, end_year))
+    rows = cur.fetchall()
+    
+    data = {year: [] for year in range(start_year, end_year + 1)}
+    for row in rows:
+        data[row[2]].append({
+            "name": row[0],
+            "region": row[1],
+            "population": row[3],
+            "health_exp": row[4],
+            "life_exp": row[5]
+        })
+    
+    conn.close()
+    return data
+
+class DeathCauseData(BaseModel):
+    date: int
+    name: str
+    value: float
+    rank: int
+
+def query_and_process_death_causes(start_year = 1960, end_year = 2023) -> List[Dict]:
+    conn, cur = connect_db()
+    query = """
+    SELECT
+    d.date,
+    CASE 
+            WHEN d.indicator_id = 'SH.DTH.COMM.ZS' THEN 'Communicable Diseases'
+            WHEN d.indicator_id = 'SH.DTH.INJR.ZS' THEN 'Injuries'
+            WHEN d.indicator_id = 'SH.DTH.NCOM.ZS' THEN 'Non-communicable Diseases'
+            END AS name,
+    avg(d.value) AS avg_percentage_of_total_deaths,
+    ROW_NUMBER() OVER (PARTITION BY d.date ORDER BY SUM(d.value) DESC) AS rank
+FROM
+    databank d
+WHERE d.date BETWEEN ? AND ?
             AND d.indicator_id IN (
-                'SH.DTH.COMM.ZS',  -- Communicable diseases
+                'SH.DTH.COMM.ZS' ,  -- Communicable diseases
                 'SH.DTH.INJR.ZS',  -- Injuries
                 'SH.DTH.NCOM.ZS'   -- Non-communicable diseases
             )
-    )
-    SELECT 
-        date,
-        name,
-        category,
-        value
-    FROM ranked_causes
-    WHERE rank <= 12  -- Get top 12 for each year
-    ORDER BY date, value DESC;
+GROUP BY
+    d.date, d.indicator_id
+ORDER BY
+    d.date, rank DESC;
     """
     
-    cursor.execute(query, (start_year, end_year))
-    rows = cursor.fetchall()
+    cur.execute(query, (start_year, end_year))
+    rows = cur.fetchall()
     
-    # Transform into the required format
     data = [
         {
             "date": row[0],
             "name": row[1],
-            "category": row[2],
-            "value": row[3]
+            "value": row[2],
+            "rank": row[3]
         }
         for row in rows
     ]
