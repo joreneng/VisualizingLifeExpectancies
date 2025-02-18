@@ -75,6 +75,7 @@ def query_and_process_avg_life_exp(start_year=1960, end_year=2023) -> Dict[str, 
     results = execute_sql_script("query_avg_life_exp.sql",
                                  start_year, end_year, INDICATORS["LIFE_EXPECTANCY"])
 
+    # date = {"United Arab Emirates": 48.8}
     data = {row[0]: row[1] for row in results}
     return data
 
@@ -83,6 +84,7 @@ def query_and_process_avg_life_exp(start_year=1960, end_year=2023) -> Dict[str, 
 def query_and_process_wealth_health_values(start_year=1960, end_year=2023) -> Dict[int, List[BubbleObject]]:
     results = execute_sql_script("query_wealth_health.sql", start_year, end_year)
 
+    # data = {2000: [name: "United Arab Emirates", region: ""]}
     data = {year: [] for year in range(start_year, end_year + 1)}
     for row in results:
         data[row[2]].append({
