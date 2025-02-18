@@ -1,8 +1,7 @@
-import sqlite3
 from unittest import TestCase
-from backend.queries import (keep_only_country_codes, query_and_process_wealth_health_values)
-from backend.db_setup import *
-from backend.queries import *
+from backend.utils import keep_only_country_codes, create_and_populate_iso2codes, create_and_populate_regions_table
+from backend.db.setup import *
+from backend.db.fetch import *
 
 class DatabaseTests(TestCase):
     def test_fetch_data(self):
@@ -19,6 +18,7 @@ class DatabaseTests(TestCase):
         cur.execute("SELECT COUNT(*) FROM iso2_codes")
         row_count = cur.fetchone()[0]
         self.assertEqual(row_count, 296)
+        cur.close()
         conn.close()
 
     def test_process_and_populate_data(self):
@@ -27,6 +27,7 @@ class DatabaseTests(TestCase):
         cur.execute("SELECT COUNT(*) FROM databank")
         row_count = cur.fetchone()[0]
         self.assertEqual(row_count, 1064)
+        cur.close()
         conn.close()
 
     def test_add_new_rows_to_table(self):
@@ -41,6 +42,7 @@ class DatabaseTests(TestCase):
         cur.execute("SELECT COUNT(*) FROM databank")
         row_count = cur.fetchone()[0]
         self.assertEqual(row_count, num_of_entries)
+        cur.close()
         conn.close()
 
     def test_query_and_process_avg_values(self):
@@ -53,6 +55,7 @@ class DatabaseTests(TestCase):
         cur.execute("SELECT COUNT(*) FROM regions")
         row_count = cur.fetchone()[0]
         self.assertGreater(row_count, 0)
+        cur.close()
         conn.close()
 
 class QueryTests(TestCase):
@@ -62,6 +65,7 @@ class QueryTests(TestCase):
         cur.execute("SELECT COUNT(*) FROM country_codes")
         row_count = cur.fetchone()[0]
         self.assertEqual(row_count, 215)
+        cur.close()
         conn.close()
 
     def test_query_and_process_wealth_health_values(self):
@@ -74,4 +78,5 @@ class QueryTests(TestCase):
 
     def test_find_life_expectancy_of_countries_by_years(self):
         result = find_life_expectancy_of_countries_by_years(1960, 2025)
+        result = query_and_process_life_expectancies(1960, 2025)
         self.assertIsInstance(result, list)

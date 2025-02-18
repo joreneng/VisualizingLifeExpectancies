@@ -1,12 +1,5 @@
 # Test your FastAPI endpoints
-
-GET http://127.0.0.1:8000/chloro-chart-data
-Accept: application/json
-
-###
-
-GET http://127.0.0.1:8000/hello/User
-Accept: application/json
+##
 
 ###
 GET http://localhost:8000/chloro-chart-data/2000/2020

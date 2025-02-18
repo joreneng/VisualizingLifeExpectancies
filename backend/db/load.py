@@ -1,4 +1,4 @@
-from backend.db_setup import process_and_populate_data
+from backend.db.setup import process_and_populate_data
 from backend.config import INDICATORS
 
 def load_db():
