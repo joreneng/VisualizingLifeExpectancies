@@ -1,7 +1,9 @@
 ![4 charts!](https://github.com/user-attachments/assets/127086a0-d4b5-4c73-922d-23916dfffb6b)
 
 To run:
+
 Run command: uvicorn backend.main:app 
+
 Run dashboard.html
 
 Built on FastAPI, Python, SQLITE, d3.js, HTML, CSS
