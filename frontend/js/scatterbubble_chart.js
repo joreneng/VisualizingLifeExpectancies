@@ -7,10 +7,11 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
             return;
         }
 
-        // Remove existing SVG and tooltips
+        // Clear previous chart
         d3.select('#scatterbubble-container svg').remove();
         d3.selectAll('#scatter-tooltip').remove();
 
+        // Fetch data
         const response = await fetch(`http://127.0.0.1:8000/bubble-data/${start_year}/${end_year}`);
         const rawData = await response.json();
 
@@ -104,8 +105,8 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
                 d3.max(years.flatMap(year => interpolatedData[year]), d => d.health_exp) * 1.2])
             .range([margin.left, width - margin.right]);
 
-        // // After creating the SVG, add a clipping path
-        const clip = svg.append("defs")
+        // After creating the SVG, add a clipping path
+        svg.append("defs")
             .append("clipPath")
             .attr("id", "chart-area")
             .append("rect")
@@ -240,15 +241,6 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
 
         function updateChart(year) {
             const yearData = interpolatedData[year];
-            
-            // Check if we have valid data for this year
-            // if (!yearData || yearData.length === 0) {
-            //     // Clear existing circles
-            //     chartGroup.selectAll("circle").remove();
-            //     // Update year label to show no data
-            //     yearLabel.text(`${year} (No data)`);
-            //     return;
-            // }
 
             // Update circles
             const circles = chartGroup.selectAll("circle")
@@ -317,10 +309,7 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
             setTimeout(animate, 1000);
         }
 
-        // Start animation
         animate();
-
-        // Replace container.innerHTML = '' with:
         container.appendChild(svg.node());
 
     } catch (error) {

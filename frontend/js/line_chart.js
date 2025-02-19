@@ -77,7 +77,7 @@ async function renderLineChart(start_year = 1960, end_year = 2023) {
             .x(d => x(d.date))
             .y(d => y(d.value));
 
-        // Draw lines with interaction
+        // Draw lines
         const paths = svg.append("g")
             .attr("fill", "none")
             .attr("stroke", "#8E6DBF")

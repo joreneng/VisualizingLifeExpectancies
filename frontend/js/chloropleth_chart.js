@@ -19,7 +19,7 @@ async function renderChloropleth(start_year = 1960, end_year = 2023) {
         const countries = topojson.feature(world, world.objects.countries);
         const countrymesh = topojson.mesh(world, world.objects.countries, (a, b) => a !== b);
 
-        // Get container width
+        // Set up dimensions
         const containerWidth = container.clientWidth;
         const width = Math.min(containerWidth - 40, 800);
         const marginTop = 46;

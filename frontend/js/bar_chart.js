@@ -12,7 +12,7 @@ async function renderBarChart(start_year = 1960, end_year = 2023) {
         const response = await fetch(`http://127.0.0.1:8000/bar-chart-data/${start_year}/${end_year}`);
         const data = await response.json();
 
-        // Chart dimensions
+        // Set up dimensions
         const width = 1000;
         const height = 400;
         const marginTop = 100;
