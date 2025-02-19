@@ -2,11 +2,17 @@
 
 To run:
 
-Run command: uvicorn backend.main:app 
+Install dependencies: pip install -r requirements.txt
 
-Run dashboard.html
+Command to load db: uvicorn backend.main:app 
+
+For the frontend: Run dashboard.html
+
+<br>
 
 Built on FastAPI, Python, SQLITE, d3.js, HTML, CSS
+
+<br>
 
 **4 charts created:**
 
