@@ -5,6 +5,7 @@ from typing import Dict, List
 from backend.db.fetch import (query_and_process_wealth_health_values, query_and_process_avg_life_exp, BubbleObject,
                               query_and_process_death_causes, query_and_process_life_expectancies, DeathCauseData,
                               LineChartData)
+from backend.db.load import load_db
 
 app = FastAPI()
 load_db()
