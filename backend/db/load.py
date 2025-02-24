@@ -1,5 +1,5 @@
-from backend.db.setup import process_and_populate_data
 from backend.config import INDICATORS
+from backend.db.setup import process_and_populate_data
 from backend.utils import create_and_populate_iso2codes, create_and_populate_regions, create_table, \
     create_and_populate_country_codes
 

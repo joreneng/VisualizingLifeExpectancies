@@ -16,7 +16,7 @@ async function renderBarChart(start_year = 1960, end_year = 2023) {
         if (Object.keys(data).length === 0) {
             const width = 1000;
             const height = 400;
-            
+
             const svg = d3.create("svg")
                 .attr("viewBox", [0, 0, width, height])
                 .attr("width", width)
@@ -76,13 +76,13 @@ async function renderBarChart(start_year = 1960, end_year = 2023) {
 
         function updateChart(year) {
             const yearData = dataByYear.get(year);
-            
+
             // Handle no data case
             if (!yearData || yearData.length === 0) {
                 // Clear existing elements
                 svg.selectAll("rect").remove();
                 svg.selectAll(".label").remove();
-                
+
                 // Update year display to show no data
                 svg.selectAll(".year-label")
                     .data([year])
@@ -150,17 +150,17 @@ async function renderBarChart(start_year = 1960, end_year = 2023) {
             if (currentYearIndex >= years.length) {
                 currentYearIndex = 0;
             }
-            
+
             // Skip years with no data
-            while (currentYearIndex < years.length && 
-                   (!dataByYear.get(years[currentYearIndex]) || 
-                    dataByYear.get(years[currentYearIndex]).length === 0)) {
+            while (currentYearIndex < years.length &&
+            (!dataByYear.get(years[currentYearIndex]) ||
+                dataByYear.get(years[currentYearIndex]).length === 0)) {
                 currentYearIndex++;
                 if (currentYearIndex >= years.length) {
                     currentYearIndex = 0;
                 }
             }
-            
+
             updateChart(years[currentYearIndex]);
             currentYearIndex++;
             setTimeout(animate, 1000);
@@ -176,7 +176,7 @@ async function renderBarChart(start_year = 1960, end_year = 2023) {
         if (container) {
             const width = 1000;
             const height = 400;
-            
+
             const svg = d3.create("svg")
                 .attr("viewBox", [0, 0, width, height])
                 .attr("width", width)

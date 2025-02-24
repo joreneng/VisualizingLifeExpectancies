@@ -1,4 +1,5 @@
 import sqlite3
+
 import pandas as pd
 import requests
 from pydantic import BaseModel, StrictInt, StrictStr
@@ -19,15 +20,18 @@ class APIParams(BaseModel):
     def construct_url(self):
         return f'https://api.worldbank.org/v2/country/all/indicator/{self.indicator_id}?date={self.start_year}:{self.end_year}&format=json'
 
+
 def connect_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     return conn, cur
 
+
 def commit_and_close_db(conn, cur):
     conn.commit()
     cur.close()
     conn.close()
+
 
 # fetches data from the databank API and returns the queried data in a list of dictionaries
 def fetch_data_by_indicator_and_years(indicator_id, start_year, end_year):

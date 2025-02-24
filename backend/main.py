@@ -1,7 +1,9 @@
+from typing import Dict, List
+
 from fastapi import FastAPI, HTTPException, status
 from fastapi.logger import logger
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, List
+
 from backend.db.fetch import (query_and_process_wealth_health_values, query_and_process_avg_life_exp, BubbleObject,
                               query_and_process_death_causes, query_and_process_life_expectancies, DeathCauseData,
                               LineChartData)
@@ -18,6 +20,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Endpoint to fetch the average values
 @app.get("/chloro-chart-data/{start_year}/{end_year}", response_model=Dict[str, float])
@@ -36,6 +39,7 @@ async def get_chloro_chart_data(start_year: int, end_year: int):
         logger.error(f"Error in chloro_chart: {str(e)}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+
 @app.get("/bubble-data/{start_year}/{end_year}", response_model=Dict[int, List[BubbleObject]])
 async def get_bubble_data(start_year: int, end_year: int):
     try:
@@ -52,6 +56,7 @@ async def get_bubble_data(start_year: int, end_year: int):
         logger.error(f"Error in bubble_data: {str(e)}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+
 @app.get("/bar-chart-data/{start_year}/{end_year}", response_model=List[DeathCauseData])
 async def get_bar_chart_data(start_year: int, end_year: int):
     try:
@@ -64,6 +69,7 @@ async def get_bar_chart_data(start_year: int, end_year: int):
     except Exception as e:
         logger.error(f"Error in bar_chart: {str(e)}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 
 @app.get("/line-chart-data/{start_year}/{end_year}", response_model=List[LineChartData])
 async def get_line_chart_data(start_year: int, end_year: int):

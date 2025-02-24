@@ -159,24 +159,32 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
 
         // Add one dot in the legend for each name.
         svg.selectAll("mydots")
-          .data(keys)
-          .enter()
-          .append("circle")
+            .data(keys)
+            .enter()
+            .append("circle")
             .attr("cy", 10)
-            .attr("cx", function(d,i){ return margin.left + i*70; })
+            .attr("cx", function (d, i) {
+                return margin.left + i * 70;
+            })
             .attr("r", 3)
             .attr("stroke", "black")
-            .style("fill", function(d){ return color(d)});
+            .style("fill", function (d) {
+                return color(d)
+            });
 
         // Add one dot in the legend for each name.
         svg.selectAll("mylabels")
-          .data(keys)
-          .enter()
-          .append("text")
+            .data(keys)
+            .enter()
+            .append("text")
             .attr("y", 10)
-            .attr("x", function(d,i){ return margin.left + 7 + i*70; })
+            .attr("x", function (d, i) {
+                return margin.left + 7 + i * 70;
+            })
             .style("fill", "black")
-            .text(function(d){ return d; })
+            .text(function (d) {
+                return d;
+            })
             .attr("text-anchor", "left")
             .style("alignment-baseline", "middle");
 
@@ -315,17 +323,17 @@ async function renderScatterBubble(start_year = 1960, end_year = 2023) {
             if (currentYearIndex >= years.length) {
                 currentYearIndex = 0;
             }
-            
+
             // Skip years with no data
-            while (currentYearIndex < years.length && 
-                   (!interpolatedData[years[currentYearIndex]] || 
-                    interpolatedData[years[currentYearIndex]].length === 0)) {
+            while (currentYearIndex < years.length &&
+            (!interpolatedData[years[currentYearIndex]] ||
+                interpolatedData[years[currentYearIndex]].length === 0)) {
                 currentYearIndex++;
                 if (currentYearIndex >= years.length) {
                     currentYearIndex = 0;
                 }
             }
-            
+
             updateChart(years[currentYearIndex]);
             currentYearIndex++;
             setTimeout(animate, 1000);

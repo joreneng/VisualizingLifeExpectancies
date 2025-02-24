@@ -5,6 +5,7 @@ import requests
 
 from backend.db.setup import connect_db, commit_and_close_db
 
+
 def create_and_populate_iso2codes():
     all_data, page = [], 1
     country_url = 'https://api.worldbank.org/v2/country?format=json'
@@ -21,17 +22,18 @@ def create_and_populate_iso2codes():
     df.rename(columns={'iso2Code': 'id', 'name': 'country'}, inplace=True)
 
     conn, cur = connect_db()
-    cur.execute("""
+    query = ("""
         CREATE TABLE IF NOT EXISTS iso2_codes (
             id TEXT PRIMARY KEY,
             country TEXT
         );
              """)
+    cur.execute(query)
     df.to_sql('iso2_codes', conn, if_exists='append', index=False)
     commit_and_close_db(conn, cur)
 
 
-def create_and_populate_regions ():
+def create_and_populate_regions():
     current_dir = Path(__file__).parent
     json_path = str(current_dir.parent / "data" / "countries_with_region.json")
     df = pd.read_json(json_path)
@@ -59,7 +61,7 @@ def create_and_populate_regions ():
 
 def create_table():
     conn, cur = connect_db()
-    cur.execute("""
+    query = ("""
         CREATE TABLE IF NOT EXISTS databank (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date INT,
@@ -69,13 +71,14 @@ def create_table():
             value REAL
         );
     """)
-
-    cur.execute("""
+    index = ("""
         CREATE UNIQUE INDEX idx_databank_unique 
         ON databank (indicator_id, country_id, date);
     """)
-
+    cur.execute(query)
+    cur.execute(index)
     commit_and_close_db(conn, cur)
+
 
 def create_and_populate_country_codes():
     conn, cur = connect_db()
@@ -85,14 +88,12 @@ def create_and_populate_country_codes():
             country TEXT
         );
         """)
-
     query = ("""
     INSERT INTO country_codes (id, country)
     SELECT i.id, i.country
     FROM iso2_codes i
     WHERE i.id IN (SELECT country_id FROM regions);
     """)
-
     cur.execute(create)
     cur.execute(query)
     commit_and_close_db(conn, cur)

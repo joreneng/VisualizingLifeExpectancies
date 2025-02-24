@@ -30,7 +30,7 @@ async function renderChloropleth(start_year = 1960, end_year = 2023) {
         const path = d3.geoPath(projection);
 
         // Define color scale
-        const color = d3.scaleSequential(d3.extent(Object.values(data)), 
+        const color = d3.scaleSequential(d3.extent(Object.values(data)),
             d3.interpolateHsl(d3.hsl("#ff8fa3"), d3.hsl("#8ac926")));
 
         // Create SVG
@@ -42,7 +42,7 @@ async function renderChloropleth(start_year = 1960, end_year = 2023) {
         svg.append("g")
             .attr("transform", "translate(20,0)")
             .append(() => Legend(color, {
-                title: "Average Life Expectancy (years)", 
+                title: "Average Life Expectancy (years)",
                 width: 260
             }));
 
@@ -78,7 +78,7 @@ async function renderChloropleth(start_year = 1960, end_year = 2023) {
                 return avgValue ? color(avgValue) : "#959595";
             })
             .attr("d", path)
-            .on("mouseover", function(event, d) {
+            .on("mouseover", function (event, d) {
                 const countryName = d.properties.name;
                 const countryCode = d.properties.countryCode;
                 const avgValue = data[countryCode];
@@ -86,11 +86,11 @@ async function renderChloropleth(start_year = 1960, end_year = 2023) {
                 tooltip.html(`${countryName}<br>Average Life Expectancy: ${avgValue ? avgValue.toFixed(2) : "Data not available"}`)
                     .style("visibility", "visible");
             })
-            .on("mousemove", function(event) {
+            .on("mousemove", function (event) {
                 tooltip.style("top", (event.pageY + 10) + "px")
                     .style("left", (event.pageX + 10) + "px");
             })
-            .on("mouseout", function() {
+            .on("mouseout", function () {
                 tooltip.style("visibility", "hidden");
             })
             .append("title");
