@@ -1,9 +1,17 @@
-from backend.db.setup import process_and_populate_data, create_table
+from backend.db.setup import process_and_populate_data
 from backend.config import INDICATORS
+from backend.utils import create_and_populate_iso2codes, create_and_populate_regions, create_table, \
+    create_and_populate_country_codes
+
 
 def load_db():
-    # Create table in db
+    # Create databank table in db
     create_table()
+
+    # Create static db tables
+    create_and_populate_iso2codes()
+    create_and_populate_regions()
+    create_and_populate_country_codes()
 
     # Life expectancy at birth, total (years)
     process_and_populate_data(INDICATORS["LIFE_EXPECTANCY"], 1960, 2025)

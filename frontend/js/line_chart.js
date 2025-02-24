@@ -152,5 +152,27 @@ async function renderLineChart(start_year = 1960, end_year = 2023) {
 
     } catch (error) {
         console.error("Error:", error);
+
+        const container = document.getElementById("line-container");
+        if (container) {
+            const width = 1000;
+            const height = 400;
+
+            const svg = d3.create("svg")
+                .attr("viewBox", [0, 0, width, height])
+                .attr("width", width)
+                .attr("height", height)
+                .attr("style", "max-width: 100%; height: auto;");
+
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height / 2)
+                .attr("text-anchor", "middle")
+                .attr("font-family", "Patrick Hand")
+                .attr("font-size", "24px")
+                .text(`No life expectancy data available for years ${start_year}-${end_year}`);
+
+            container.appendChild(svg.node());
+        }
     }
 }

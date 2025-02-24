@@ -12,6 +12,29 @@ async function renderBarChart(start_year = 1960, end_year = 2023) {
         const response = await fetch(`http://127.0.0.1:8000/bar-chart-data/${start_year}/${end_year}`);
         const data = await response.json();
 
+        // Check if we have any data
+        if (Object.keys(data).length === 0) {
+            const width = 1000;
+            const height = 400;
+            
+            const svg = d3.create("svg")
+                .attr("viewBox", [0, 0, width, height])
+                .attr("width", width)
+                .attr("height", height)
+                .attr("style", "max-width: 100%; height: auto;");
+
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height / 2)
+                .attr("text-anchor", "middle")
+                .attr("font-family", "Patrick Hand")
+                .attr("font-size", "24px")
+                .text(`No mortality data available for years ${start_year}-${end_year}`);
+
+            container.appendChild(svg.node());
+            return;
+        }
+
         // Set up dimensions
         const width = 1000;
         const height = 400;
@@ -148,6 +171,28 @@ async function renderBarChart(start_year = 1960, end_year = 2023) {
 
     } catch (error) {
         console.error("Error:", error);
+
+        const container = document.getElementById("bar-container");
+        if (container) {
+            const width = 1000;
+            const height = 400;
+            
+            const svg = d3.create("svg")
+                .attr("viewBox", [0, 0, width, height])
+                .attr("width", width)
+                .attr("height", height)
+                .attr("style", "max-width: 100%; height: auto;");
+
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height / 2)
+                .attr("text-anchor", "middle")
+                .attr("font-family", "Patrick Hand")
+                .attr("font-size", "24px")
+                .text(`No mortality data available for years ${start_year}-${end_year}`);
+
+            container.appendChild(svg.node());
+        }
     }
 }
 

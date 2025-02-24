@@ -29,27 +29,6 @@ def commit_and_close_db(conn, cur):
     cur.close()
     conn.close()
 
-def create_table():
-    conn, cur = connect_db()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS databank (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date INT,
-            indicator_id TEXT,
-            country_id TEXT,
-            unit TEXT,
-            value REAL
-        );
-    """)
-
-    cur.execute("""
-        CREATE UNIQUE INDEX idx_databank_unique 
-        ON databank (indicator_id, country_id, date);
-    """)
-
-    commit_and_close_db(conn, cur)
-
-
 # fetches data from the databank API and returns the queried data in a list of dictionaries
 def fetch_data_by_indicator_and_years(indicator_id, start_year, end_year):
     all_data, page = [], 1
@@ -71,24 +50,16 @@ def fetch_data_by_indicator_and_years(indicator_id, start_year, end_year):
     return all_data
 
 
-def fetch_country_codes(conn):
-    query = "SELECT id FROM country_codes"
-    country_codes_df = pd.read_sql(query, conn)
-    return country_codes_df['id'].tolist()
-
-
 # removes duplicates and adds only the new rows to the table
 def add_new_rows_to_table(new_df):
-    # filter new_df so that it only contains rows with valid country codes and non-null values
-    # country_codes = fetch_country_codes(con)
+    # filter new_df so that it only contains rows with non-null values
     new_df = new_df.dropna(subset=['country_id', 'value'])
-    # valid_codes = new_df['country_id'].isin(country_codes)
-    # new_df = new_df[valid_codes]
 
     conn, cur = connect_db()
     existing_df = pd.read_sql("SELECT * FROM databank", conn)
 
     # left join to find rows in new_df that are not in existing_df and include only the new rows in the new df
+    new_df.loc[:, 'date'] = new_df['date'].astype(int)
     merged_df = pd.merge(new_df, existing_df, on=['indicator_id', 'country_id', 'date'], how='left', indicator=True)
     df_to_insert = merged_df[merged_df['_merge'] == 'left_only'].drop(columns=['_merge'])
 
