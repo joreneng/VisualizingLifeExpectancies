@@ -4,7 +4,7 @@ To run:
 
 Install dependencies: pip install -r requirements.txt
 
-Command to load db: uvicorn backend.main:app (NOTE: it should take a while since we are loading 40k rows of data to the db)
+Command to load db: uvicorn backend.main:app
 
 After database has loaded completely, the console should look like this:
 ![image](https://github.com/user-attachments/assets/3938b672-cb0a-461a-b039-8df2920ed8db)
