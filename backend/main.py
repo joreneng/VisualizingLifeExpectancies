@@ -43,11 +43,11 @@ async def get_chloro_chart_data(start_year: int, end_year: int):
 @app.get("/bubble-data/{start_year}/{end_year}", response_model=Dict[int, List[BubbleObject]])
 async def get_bubble_data(start_year: int, end_year: int):
     try:
-        logger.debug(f"Received request for years: {start_year}-{end_year}")
+        logger.debug(f"Received request for bubble chart years: {start_year}-{end_year}")
 
         data = query_and_process_wealth_health_values(start_year, end_year)
         if not data:
-            logger.warning("No data returned from query")
+            logger.warning("No data returned from bubble chart query")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No data found for the specified years")
 
         logger.debug(f"First country data: {list(data.items())[:1]}")

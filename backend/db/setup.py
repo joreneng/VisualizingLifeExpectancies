@@ -18,7 +18,7 @@ class APIParams(BaseModel):
     end_year: StrictInt
 
     def construct_url(self):
-        return f'https://api.worldbank.org/v2/country/all/indicator/{self.indicator_id}?date={self.start_year}:{self.end_year}&format=json'
+        return f'https://api.worldbank.org/v2/country/all/indicator/{self.indicator_id}?date={self.start_year}:{self.end_year}&format=json&per_page=1000'
 
 
 def connect_db():

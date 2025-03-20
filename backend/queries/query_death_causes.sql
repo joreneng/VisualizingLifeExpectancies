@@ -4,8 +4,8 @@ SELECT d.date,
            WHEN d.indicator_id = 'SH.DTH.INJR.ZS' THEN 'Injuries'
            WHEN d.indicator_id = 'SH.DTH.NCOM.ZS' THEN 'Non-communicable Diseases'
            END                                                            AS name,
-       avg(d.value)                                                       AS avg_percentage_of_total_deaths,
-       ROW_NUMBER() OVER (PARTITION BY d.date ORDER BY SUM(d.value) DESC) AS rank
+       AVG(d.value)                                                       AS avg_percentage_of_total_deaths,
+       ROW_NUMBER() OVER (PARTITION BY d.date ORDER BY AVG(d.value) DESC) AS rank
 FROM databank d
 WHERE d.date BETWEEN ? AND ?
   AND d.indicator_id IN (
